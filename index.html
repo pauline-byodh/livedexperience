@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Lived Experience Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #000000;
+    --surface: #2b2b2b;
+    --surface-raised: #3a3a3a;
+    --text: #efe7da;
+    --text-muted: #a89b7f;
+    --bloom: #F2577D;
+    --bloom-dim: #7A3145;
+    --gold: #F0B429;
+    --gold-dim: #7A5D1B;
+    --border: rgba(239,231,218,0.14);
+    --radius: 18px;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html,body{
+    margin:0;
+    padding:0;
+    min-height:100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+  }
+
+  body{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 32px 20px;
+  }
+
+  .stage{
+    width:100%;
+    max-width: 560px;
+  }
+
+  .eyebrow{
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 600;
+    margin: 0 0 10px;
+  }
+
+  h1.title{
+    font-family: 'Fraunces', serif;
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-size: clamp(30px, 6vw, 42px);
+    line-height: 1.1;
+    margin: 0 0 14px;
+  }
+
+  .intro-copy{
+    margin: 0 0 32px;
+    max-width: 48ch;
+  }
+
+  .intro-copy p{
+    color: #edece8;
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0 0 14px;
+  }
+
+  .intro-copy p:last-child{
+    margin-bottom: 0;
+    color: #ffffff;
+    font-weight: 500;
+  }
+
+  #lived-eyebrow{
+    color: #e6e246;
+  }
+
+  #lived-title{
+    color: #ffffff;
+  }
+
+  .card{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+  }
+
+  label{
+    display:block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #edece8;
+    margin: 0 0 8px;
+  }
+
+  .field{ margin-bottom: 22px; }
+  .field:last-of-type{ margin-bottom: 0; }
+
+  input[type="text"], input[type="date"]{
+    width: 100%;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 15px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+  }
+
+  input[type="text"]::placeholder{ color: var(--text-muted); }
+
+  input:focus{
+    outline: none;
+    border-color: var(--bloom);
+    box-shadow: 0 0 0 3px rgba(242,87,125,0.18);
+  }
+
+  input[type="date"]{ color-scheme: dark; }
+
+  .submit-row{ margin-top: 28px; }
+
+  button.primary{
+    width: 100%;
+    background: #e7e246;
+    color: #000000;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+
+  button.primary:hover{ background: #efe95f; }
+  button.primary:active{ transform: scale(0.98); }
+
+  .error-msg{
+    color: var(--bloom);
+    font-size: 13px;
+    margin-top: 14px;
+    min-height: 16px;
+  }
+
+  #reveal-view{ display:none; }
+  #reveal-view.active{ display:block; }
+  #form-view.hidden{ display:none; }
+
+  .bloom-wrap{
+    display:flex;
+    justify-content:center;
+    margin-bottom: 8px;
+  }
+
+  .bloom-wrap svg{ width: 96px; height: 96px; overflow: visible; }
+
+  .petal{
+    transform-origin: 48px 60px;
+    transform: scale(0);
+    opacity: 0;
+    animation: petal-open 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  }
+  .petal.p1{ animation-delay: 0.15s; }
+  .petal.p2{ animation-delay: 0.25s; }
+  .petal.p3{ animation-delay: 0.35s; }
+  .petal.p4{ animation-delay: 0.45s; }
+  .petal.p5{ animation-delay: 0.55s; }
+  .seed-dot{
+    transform-origin: 48px 60px;
+    transform: scale(0);
+    animation: seed-in 0.4s ease forwards;
+  }
+  .stem{
+    stroke-dasharray: 40;
+    stroke-dashoffset: 40;
+    animation: stem-grow 0.5s ease forwards;
+    animation-delay: 0.05s;
+  }
+
+  @keyframes petal-open{
+    to{ transform: scale(1); opacity: 1; }
+  }
+  @keyframes seed-in{
+    to{ transform: scale(1); }
+  }
+  @keyframes stem-grow{
+    to{ stroke-dashoffset: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .petal, .seed-dot, .stem{ animation: none !important; transform: scale(1) !important; opacity: 1 !important; stroke-dashoffset: 0 !important; }
+  }
+
+  .reveal-name{
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(26px, 5vw, 34px);
+    text-align:center;
+    margin: 4px 0 22px;
+  }
+
+  ul.creator-list{
+    list-style: none;
+    margin: 0 0 30px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  ul.creator-list[hidden]{
+    display: none;
+  }
+
+  ul.creator-list li{
+    font-size: 16px;
+    line-height: 1.5;
+    padding-left: 22px;
+    position: relative;
+  }
+
+  ul.creator-list li::before{
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+
+  ul.creator-list li strong{
+    font-weight: 600;
+    color: var(--gold);
+  }
+
+  .stats-stack{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin: 0 0 30px;
+    padding: 24px 4px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat-tier{
+    text-align: center;
+    position: relative;
+  }
+
+  .stat-tier .num{
+    display: block;
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    color: #e7e246;
+    margin-bottom: 4px;
+  }
+
+  .num-years{
+    font-size: clamp(20px, 4vw, 26px);
+  }
+
+  .num-months{
+    font-size: clamp(28px, 6vw, 38px);
+  }
+
+  .num-days{
+    font-size: clamp(46px, 12vw, 72px);
+  }
+
+  .stat-tier .unit{
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .tier-months, .tier-days{
+    margin-top: 4px;
+  }
+
+  .fireworks{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+
+  .spark{
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+    opacity: 1;
+    animation: spark-fly 0.9s ease-out forwards;
+  }
+
+  @keyframes spark-fly{
+    to{
+      transform: translate(var(--tx), var(--ty)) scale(0);
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .spark{ animation: none !important; opacity: 0 !important; }
+  }
+
+  .perspective{
+    margin: 0 0 28px;
+    padding: 0 4px;
+  }
+
+  .perspective-line{
+    font-size: 15px;
+    line-height: 1.6;
+    text-align: left;
+    color: var(--text);
+    margin: 0;
+  }
+
+  .perspective-line strong{
+    font-weight: 600;
+    color: var(--gold);
+  }
+
+  .perspective-line em{
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .affirmation{
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 18px;
+    line-height: 1.5;
+    text-align:left;
+    margin: 0 0 10px;
+  }
+
+  .affirmation .accent-name{
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .affirmation-body{
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #ffffff;
+    text-align: left;
+    margin: 0 0 28px;
+  }
+
+  button.ghost{
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: #e6e246;
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+  }
+
+  button.ghost:hover{ border-color: #e6e246; color: #efe95f; }
+
+  button.ghost.small{
+    width: auto;
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  .perspective-line.loading{
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .celebration-gif{
+    margin: 0 0 28px;
+    text-align: center;
+  }
+
+  .celebration-gif img{
+    max-width: 240px;
+    width: 100%;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+
+  .celebration-gif .gif-caption{
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 8px;
+  }
+
+  .sr-only{
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <div id="form-view">
+    <p class="eyebrow" id="lived-eyebrow">For those "who the f*ck am I to be doing this?" moments.</p>
+    <h1 class="title" id="lived-title">The Lived Experience Calculator</h1>
+    <div class="intro-copy" id="lived-lede">
+      <p>When impostor syndrome has you questioning whether you're qualified enough, experienced enough, or know enough to keep going, this calculator brings the receipts.</p>
+      <p>Add up the time you've spent learning, doing, surviving, figuring it out, starting over, helping people, making mistakes, and becoming the person you are now.</p>
+      <p>Because your expertise didn't begin when someone handed you a credential. You've lived it. Now let's calculate it.</p>
+    </div>
+
+    <div class="card">
+      <form id="entry-form" novalidate>
+        <div class="field">
+          <label for="experience">Name Your Lived Experience</label>
+          <input type="text" id="experience" placeholder="Being a mom, running a business, recovery..." autocomplete="off">
+        </div>
+
+        <div class="field">
+          <label for="name">Your First Name</label>
+          <input type="text" id="name" placeholder="Jordan" autocomplete="given-name">
+        </div>
+
+        <div class="field">
+          <label for="start-date">When Did Your Lived Experience Start</label>
+          <input type="date" id="start-date">
+        </div>
+
+        <div class="submit-row">
+          <button type="submit" class="primary">Show me how far I've come</button>
+          <p class="error-msg" id="error-msg"></p>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="reveal-view">
+    <div class="bloom-wrap" aria-hidden="true">
+      <svg viewBox="0 0 96 96">
+        <line class="stem" x1="48" y1="88" x2="48" y2="60" stroke="#3F8F5E" stroke-width="4" stroke-linecap="round"/>
+        <ellipse class="petal p1" cx="48" cy="42" rx="10" ry="16" fill="#9e1892"/>
+        <ellipse class="petal p2" cx="63" cy="52" rx="10" ry="16" fill="#9e1892" transform="rotate(72 48 60)"/>
+        <ellipse class="petal p3" cx="63" cy="52" rx="10" ry="16" fill="#9e1892" transform="rotate(144 48 60)"/>
+        <ellipse class="petal p4" cx="63" cy="52" rx="10" ry="16" fill="#9e1892" transform="rotate(216 48 60)"/>
+        <ellipse class="petal p5" cx="63" cy="52" rx="10" ry="16" fill="#9e1892" transform="rotate(288 48 60)"/>
+        <circle class="seed-dot" cx="48" cy="60" r="8" fill="var(--gold)"/>
+      </svg>
+    </div>
+
+    <h2 class="reveal-name" id="reveal-name"></h2>
+    <p class="eyebrow" style="text-align:center; color:#ffffff;" id="creator-eyebrow">As a creator, you</p>
+
+    <ul class="creator-list" id="creator-list">
+      <li>Sorted through <strong id="seed-count"></strong> seeds of possibility</li>
+      <li>Picked one</li>
+      <li>Nurtured &amp; grew the seed into a literal human</li>
+    </ul>
+
+    <div class="stats-stack">
+      <div class="stat-tier tier-years">
+        <span class="num num-years" id="stat-years"></span>
+        <span class="unit">Years</span>
+      </div>
+      <div class="stat-tier tier-months">
+        <span class="num num-months" id="stat-months"></span>
+        <span class="unit">Months</span>
+      </div>
+      <div class="stat-tier tier-days">
+        <span class="num num-days" id="stat-days"></span>
+        <span class="unit">Days</span>
+        <div class="fireworks" id="fireworks"></div>
+      </div>
+    </div>
+
+    <p class="affirmation" id="affirmation-lead"></p>
+    <p class="affirmation-body" id="affirmation-body"></p>
+
+    <div class="perspective" id="perspective-block">
+      <p class="eyebrow">Some perspective (nobody asked, but here it is)</p>
+      <p class="perspective-line" id="perspective-line"></p>
+    </div>
+
+    <div class="celebration-gif" id="celebration-gif" hidden>
+      <img id="celebration-gif-img" src="" alt="A celebratory GIF">
+      <p class="gif-caption">via GIPHY</p>
+    </div>
+
+    <button type="button" class="ghost" id="reset-btn">Start over</button>
+  </div>
+
+
+
+</div>
+
+<script>
+(function(){
+var MILESTONE_BUCKETS = [{"days":15,"facts":["A monarch butterfly chrysalis transforms into a butterfly in about 10-14 days.","Fresh burrata is usually at its most delicious within about two weeks of being made.","The Moon has traveled more than 370,000 miles (600,000 km) along its orbit.","Some fast-growing sunflower seedlings can reach over a foot tall in just two weeks.","A professional orchestra can spend around two weeks rehearsing a major symphony before opening night.","Inside a honeybee hive, a future queen may emerge just 16 days after her egg is laid, beginning a life that could one day lead a colony of tens of thousands of bees."]},{"days":21,"facts":["A sunflower seed planted in a summer garden may spend just three weeks pushing through the soil, unfurling its first leaves, and turning toward the sun for the very first time.","A mallard duckling may grow from a fluffy hatchling into a capable young bird in just three weeks, learning to swim almost from the day it hatches."]},{"days":30,"facts":["A barn owl chick may spend about one month growing from a tiny, down-covered hatchling into an adventurous youngster ready to explore beyond the nest.","The International Space Station completes roughly 465 trips around Earth in 30 days.","A giant Pacific octopus can noticeably increase its body size in just a month during peak growth.","Many Japanese maple trees complete an entire flush of new leaves in about one month during spring.","NASA's Perseverance rover drives the equivalent of several neighborhood walks across Mars in a typical month."]},{"days":45,"facts":["Traditional kimchi develops deeper, more complex flavors after about six weeks of fermentation.","Many hummingbird chicks become fully independent around this age.","Some tulip bulbs spend around six weeks establishing roots before spring growth begins.","A Formula 1 team can manufacture and test several new aerodynamic upgrades in about 45 days.","Earth's journey around the Sun has carried us over 110 million kilometers (68 million miles) since you started."]},{"days":60,"facts":["Sea turtle hatchlings that survive their first two months have already overcome incredible odds in the open ocean.","A vineyard's grapevines can completely transform from bare branches to lush green canopies in about two months.","Jupiter has moved more than 80 million kilometers along its enormous orbit."]},{"days":88,"facts":["In just 88 days, Mercury completes an entire journey around the Sun, the fastest year of any planet in our Solar System. You've already outlasted a whole Mercurian year.","That's about how long it takes Mercury to go all the way around the sun — 88 days, its whole year. You've already lasted longer than one full year on Mercury. No holiday for that, by the way."]},{"days":90,"facts":["A giant pumpkin can grow from a tiny seed into a sprawling vine in just three months.","Some orchids produce spectacular blooms after roughly a three-month growing cycle.","Parmigiano Reggiano has only just begun its aging journey after 90 days, it still has many months to go.","Honey bees born at the start of summer have often completed their entire working lives within about three months.","A sea otter pup floating beside its mother may spend around three months learning the skills it needs to survive among California's kelp forests.","An emperor penguin chick may spend about four months growing from a tiny grey fluffball into a young bird ready to face the Antarctic winter."]},{"days":180,"facts":["Many award-winning cheddar cheeses begin developing their signature character after six months of aging.","The James Webb Space Telescope travels with Earth around the Sun, covering hundreds of millions of kilometers in six months.","A giraffe calf roaming the African savanna may spend about six months growing strong enough to confidently keep pace with the herd.","Some giant bamboo species can establish towering canes during a single growing season of around six months.","A coral reef can add thousands of tiny new calcium carbonate skeletons to its growing structure in this time.","Professional violin makers often spend six months or more carefully crafting a single handcrafted instrument.","In wooden barrels at traditional breweries across Japan, naturally brewed soy sauce may spend six months or more fermenting, allowing time, yeast, and beneficial microbes to create its rich, savory flavor.","A young bald eagle may spend around eight months growing into a confident flyer capable of soaring across North America's skies."]},{"days":365,"facts":["In the aging rooms of Emilia-Romagna, Italy, a wheel of Parmigiano Reggiano must mature for at least 12 months before it can earn its famous name.","The International Space Station has circled Earth more than 5,800 times in the past year.","A green sea turtle hatchling may spend its first year navigating the open ocean, beginning a journey that could eventually span thousands of miles.","A moose calf born in the forests of Canada may spend its first year growing from wobbly legs to confidently wandering among towering pines.","A giant panda cub born in China's mountain forests may spend around one year growing from a tiny pink newborn into a playful youngster eager to climb, tumble, and explore.","A vineyard has completed an entire growing season, from dormant vines to harvest-ready grapes.","One annual growth ring has quietly formed inside every healthy tree around the world.","In one year, Earth travels about 584 million miles (940 million km) on its journey around the Sun, carrying every ocean, forest, city, and living creature with it.","That's about how long it takes monarch butterflies to finish their whole migration — from the mountains in Mexico, through North America, and back again. No single butterfly makes the whole trip. It takes four or five generations to finish what the first one started. Sound familiar?"]},{"days":548,"facts":["Comté cheese often reaches its richest, nuttiest flavors after around 18 months of aging.","A giant kelp forest can grow from tiny shoots into an underwater forest stretching dozens of feet toward the surface.","Earth has traveled roughly 558 million miles (898 million km) around the Sun since you started.","A violin maker may have completed several handcrafted concert-quality instruments.","Many sea stars can completely regenerate a lost arm over this amount of time."]},{"days":731,"facts":["Some traditional balsamic vinegars have spent another two years quietly concentrating in wooden barrels.","A pair of beavers can dramatically reshape a stream into a thriving wetland ecosystem in about two years.","A lion cub growing up on the plains of the Serengeti may spend around two years learning the skills of the pride before becoming an independent hunter.","Built for the 1889 World's Fair, the Eiffel Tower rose above Paris in just over two years, becoming one of the world's most recognizable landmarks.","High in California's towering redwoods, a cone may spend nearly two years developing before releasing the tiny seeds that could one day become giants.","Inside a pearl farm in Japan, a cultured pearl may spend around two years slowly forming as layer upon layer of shimmering nacre is added by a living oyster."]},{"days":913,"facts":["Oyster shells continue adding delicate layers as they slowly grow larger and stronger.","A coral colony has added thousands of tiny limestone skeletons to its living reef.","Many handcrafted acoustic guitars have been built, seasoned, and found their forever musicians.","Honey bees across a healthy hive may have visited millions upon millions of flowers.","A glacier has continued its slow downhill journey, moving only inches or feet each day, yet never truly stopping."]},{"days":1096,"facts":["A young olive tree may begin producing its very first olives after years of careful growth.","In traditional breweries across Japan, premium miso may spend three years fermenting, allowing time to develop the deep, complex flavors impossible to rush.","An elk roaming Yellowstone National Park may spend about three years growing into a fully mature adult, ready to join the dramatic autumn rut.","A young chimpanzee in Tanzania's Gombe National Park may spend its first three years almost constantly beside its mother, learning the complex social world of its troop.","Between 1501 and 1504, Michelangelo transformed a massive block of marble, one that had sat unused for decades, into David, one of history's greatest sculptures.","Earth's journey around the Sun now totals nearly 1.7 billion miles (2.7 billion km).","A peony planted in a garden may spend three to five years quietly establishing its roots before producing the spectacular blooms it's famous for."]},{"days":1278,"facts":["A pearl has quietly added thousands of microscopic layers of nacre around its center.","A family of barn owls may have successfully raised multiple generations of chicks.","Skilled artisans could hand-knot a large Persian rug over the course of several years.","Some Japanese maples develop increasingly intricate branching patterns with each passing season.","The Moon has completed nearly 50 full orbits around Earth since your journey began."]},{"days":1461,"facts":["A giant tortoise hatchling has grown noticeably stronger while still having decades, perhaps centuries, of life ahead.","Between 1508 and 1512, Michelangelo spent four years painting the ceiling of the Sistine Chapel, transforming more than 5,000 square feet into one of the world's greatest masterpieces. Some things become unforgettable one careful brushstroke at a time.","A polar bear cub may spend up to four years with its mother, learning where to hunt, how to travel across sea ice, and how to survive one of Earth's harshest environments.","That's how long Michelangelo lay on his back painting the ceiling of the Sistine Chapel — four years, one messed-up neck, and no maternity leave. He got a masterpiece. You got a masterpiece who also throws food."]},{"days":1644,"facts":["A Japanese cedar bonsai has slowly become denser and more sculptural through countless careful trims.","Coral reefs have welcomed generations of tiny fish seeking shelter among their branches.","An artisan watchmaker may have assembled hundreds of precision mechanical movements by hand.","Earth's magnetic field has continued its invisible dance, constantly shifting and protecting life from solar radiation.","Some maple syrup producers have celebrated four complete harvest seasons."]},{"days":1826,"facts":["Cherry blossom trees grown from seed in Japan's Yoshino region may spend years quietly strengthening their roots before bursting into their very first cloud of pale pink spring blossoms.","A young mountain gorilla in Rwanda's Volcanoes National Park may spend around five years growing into a confident juvenile while remaining close to its family group.","Films directed by Hayao Miyazaki often take around five years to create, with thousands of hand-drawn illustrations bringing each story patiently to life.","Deep beneath tropical seas, a natural pearl may spend five years or more slowly growing, adding microscopic layers until it becomes a tiny treasure hidden inside an oyster."]},{"days":2009,"facts":["A pair of puffins may have successfully raised several generations of chicks on the same seaside cliffs.","Beneath the ocean, a giant clam has quietly added thousands of shimmering layers to its shell."]},{"days":2192,"facts":["Ludwig van Beethoven spent roughly six years developing ideas for what became his Ninth Symphony, completing one of history's greatest musical works despite profound hearing loss.","A northern elephant seal may spend around six years growing from a tiny beach-born pup into one of the Pacific Ocean's largest marine mammals.","Earth has traveled more than 5.6 billion kilometers (3.5 billion miles) around the Sun."]},{"days":2374,"facts":["A vineyard has celebrated six complete harvests, with every vintage carrying the fingerprint of a different growing season.","A family of beavers may have transformed an ordinary stream into a thriving wetland filled with birds, fish, and wildflowers.","The Moon has completed more than 80 journeys around Earth."]},{"days":2557,"facts":["Some oak saplings are finally growing sturdy enough to cast meaningful shade."]},{"days":2739,"facts":["Arctic terns have completed several of the longest migrations in the animal kingdom, flying from pole to pole and back again.","The International Space Station has completed well over 45,000 orbits of Earth during this time."]},{"days":2922,"facts":["A young orchard has matured enough to produce dependable harvests season after season.","A humpback whale born in the warm waters of Hawaii may spend around eight years growing into a fully mature adult, completing thousands of miles of migration each year along the way."]},{"days":3105,"facts":["A colony of leafcutter ants has expanded into an intricate underground city with millions of fungus gardens to tend."]},{"days":3287,"facts":["A grove of bamboo has spread outward through underground rhizomes, sending up countless new shoots.","Some giant pumpkins have been grown from seed to record-breaking size every autumn for nine harvest seasons."]},{"days":3470,"facts":["A family of sea otters has taught a new generation how to crack shellfish using stones as tools.","Jupiter has traveled nearly 80% of the way around its enormous orbit since your journey began.","After traveling for nine and a half years across billions of miles, NASA's New Horizons spacecraft gave humanity its very first close-up view of Pluto in 2015."]},{"days":3653,"facts":["A young oak tree has become strong enough to provide meaningful shelter for birds, insects, and countless other living things.","An African elephant calf may spend around ten years growing from a playful youngster into an increasingly independent member of the herd, surrounded by generations of mothers, sisters, and aunts.","A cherry blossom tree grown from seed may spend nearly a decade preparing before celebrating its first full season of spring blossoms.","In just ten Formula 1 seasons, Ayrton Senna won three World Championships and became one of the most admired drivers in motorsport history. Greatness isn't always measured by how long something lasts, but by the mark it leaves behind.","A decade-old coral reef restoration project may now be supporting thriving schools of tropical fish.","Earth has raced more than 5.8 billion miles (9.4 billion kilometers) around the Sun while you've been on your journey.","That's Ayrton Senna's whole Formula 1 career — ten years, 161 races, three world championships, driving 200 miles an hour with a huge grin on his face. You've been doing laps around a toddler at walking speed with the same amount of drive."]},{"days":3835,"facts":["In the Pacific Northwest, a young Douglas fir has grown tall enough to become a favorite perch for songbirds.","The Moon has completed more than 140 orbits around Earth since your journey began."]},{"days":4383,"facts":["Jupiter has completed one full orbit around the Sun, the first time it's returned to nearly the same place in the sky since your journey began.","In the attics of family homes across Modena, Italy, traditional balsamic vinegar must spend at least twelve years resting in a series of ever-smaller wooden barrels before it can earn its protected name. Every summer, it concentrates. Every winter, it rests. Time is the final ingredient.","A 12-year-old Scotch whisky has reached one of the world's most celebrated age statements, developing remarkable depth and character in oak barrels.","A young vineyard has matured into a dependable producer of exceptional harvests.","Some giant kelp forests have regenerated through twelve changing seasons, sheltering countless marine creatures along the way.","Twelve annual growth rings now tell the story of every healthy tree that sprouted when you started."]},{"days":4566,"facts":["Coral restoration projects begun years ago may now support vibrant communities of reef fish.","Light leaving the Sun has crossed space to Earth more than 650,000 times during your journey."]},{"days":4748,"facts":["A young orchard has settled into a rhythm of generous annual harvests.","Some giant pandas born when your journey began are now fully grown adults."]},{"days":4931,"facts":["Thousands of migrating sea turtles have returned to the very beaches where they first hatched.","The International Space Station has completed well over 70,000 trips around Earth."]},{"days":5114,"facts":["A restored wetland has become home to frogs, dragonflies, birds, and flowering plants that weren't there before.","Built on the edge of Sydney Harbour, the Sydney Opera House took fourteen years to complete, overcoming engineering challenges that changed modern architecture forever.","Earth has traveled more than 8 billion miles around the Sun during your journey.","In forests around the world, young oak trees have begun supporting hundreds of different species of insects.","Spanning New York's East River, the Brooklyn Bridge took fourteen years to build, becoming one of the world's first great steel suspension bridges and a symbol of possibility.","Carved into South Dakota's Black Hills, Mount Rushmore took fourteen years to sculpt, with workers shaping sixty-foot-tall presidential faces from solid granite.","That's how long it took to carve Mount Rushmore out of a mountain — fourteen years, and dynamite did 90% of the work. You've raised a small human with a lot less dynamite and about the same number of meltdowns."]},{"days":5479,"facts":["A humpback whale born when your journey began may now be a fully grown adult, traveling thousands of miles between polar feeding grounds and tropical breeding waters each year."]},{"days":5661,"facts":["The Moon has completed nearly 190 orbits around Earth since your journey began."]},{"days":5844,"facts":["Earth has traveled more than 9.5 billion miles through space around the Sun.","Leonardo da Vinci began painting the Mona Lisa around 1503 and continued refining it for roughly sixteen years, carrying it with him and adding delicate touches until near the end of his life. Even masterpieces sometimes refuse to be finished."]},{"days":6209,"facts":["Beneath forests across the eastern United States, periodical cicadas spend seventeen years underground before emerging together in one of nature's most extraordinary events, a chorus millions strong that lasts only a few short weeks.","The International Space Station has completed well over 90,000 orbits of Earth.","That's exactly how long a Brood X cicada waits underground in total silence — then it comes out for about four loud, wild weeks to find a mate. You've kind of been the cicada this whole time: quiet work, then suddenly very loud."]},{"days":6575,"facts":["An oak tree planted when your journey began is becoming sturdy enough to provide meaningful habitat for birds, insects, and squirrels.","Earth has completed eighteen remarkable laps around the Sun, covering more than 10 billion miles through space."]},{"days":7122,"facts":["The Moon has completed more than 240 journeys around Earth."]},{"days":7305,"facts":["NASA's Cassini spacecraft spent nearly twenty years exploring Saturn and its moons, revealing towering ice geysers, methane lakes, and some of the Solar System's greatest surprises before ending its mission in Saturn's atmosphere.","While you've been on your journey, Earth has traveled more than 11.7 billion miles (18.8 billion km) around the Sun.","An oak tree growing in an English woodland may spend around twenty years before producing abundant acorns, beginning a legacy that can feed birds, squirrels, deer, and countless other forest animals.","Across twenty-one Formula 1 seasons, Kimi Raikkonen became one of the sport's longest-serving drivers, earning a reputation for fearless speed, quiet determination, and an unforgettable one-liner or two.","That's how long it takes a white oak tree to grow its very first acorn — and it's still called a 'young tree' for another thirty years after that. So relax. By tree rules, you're both still basically babies."]},{"days":7488,"facts":["A cork oak has grown another thick layer of bark, the same remarkable bark that can be harvested without harming the tree.","A Galapagos giant tortoise may spend around twenty years reaching adulthood, a slow and steady beginning to a life that can last well over a century.","The Moon has completed more than 250 orbits around Earth since your journey began."]},{"days":7670,"facts":["Across twenty-one years in Formula 1, Michael Schumacher won seven World Championships, helping redefine what sustained excellence looked like in motorsport.","Earth has completed twenty-one incredible laps around the Sun, traveling more than 12 billion miles through space."]},{"days":8036,"facts":["The Sun has completed an entire magnetic cycle, returning to the same magnetic orientation after twenty-two years, a rhythm that quietly influences our solar system.","A young redwood has added twenty-two new rings while beginning a life that could last for more than two thousand years.","More than 20,000 artisans spent around twenty-two years building the Taj Mahal, transforming white marble into one of the world's most enduring symbols of love."]},{"days":8218,"facts":["The International Space Station has completed well over 120,000 orbits of Earth."]},{"days":8401,"facts":["A young saguaro cactus has spent twenty-three years patiently preparing for a life that may stretch well beyond a century.","Earth has traveled nearly 13.5 billion miles around the Sun since you started."]},{"days":8766,"facts":["A whale that was born when you started may now be raising calves of its own.","The Moon has completed nearly 300 journeys around Earth.","That's how long it took to build Neuschwanstein Castle, for a king who only stayed there about 172 nights in his whole life. You, unlike him, will actually get to enjoy what you built — full time, for years."]},{"days":9131,"facts":["A forest planted twenty-five years ago has become a place of cool shade, birdsong, and flourishing wildlife.","Scientists and engineers spent roughly twenty-five years designing, building, and testing the James Webb Space Telescope before it unfolded perfectly in space and began revealing galaxies formed more than 13 billion years ago.","While you've been on your journey, Earth has traveled more than 14.6 billion miles (23.5 billion km) around the Sun."]},{"days":9314,"facts":["The Moon has completed more than 315 orbits around Earth since your journey began."]},{"days":9497,"facts":["A young cork oak has grown thick enough to provide its very first sustainable harvest of cork, without the tree being cut down.","Deep beneath the sea, a giant sponge has quietly filtered billions of gallons of seawater over its lifetime.","Earth has traveled more than 15 billion miles around the Sun."]},{"days":9862,"facts":["The International Space Station has completed well over 145,000 orbits around Earth."]},{"days":10044,"facts":["A restored wetland has become a thriving sanctuary where frogs sing, dragonflies dart, and herons hunt."]},{"days":10227,"facts":["Earth has completed twenty-eight remarkable journeys around the Sun, traveling more than 16 billion miles through space."]},{"days":10410,"facts":["The Moon has completed more than 350 journeys around Earth."]},{"days":10775,"facts":["Saturn has completed one full orbit around the Sun, returning to nearly the same place in its journey for the first time since yours began.","A forest planted when your journey started has become a flourishing habitat alive with birds, insects, fungi, and wildflowers.","While you've been growing, Earth has traveled more than 17 billion miles (27 billion km) around the Sun.","That's about how long it takes Saturn to go all the way around the sun — 29 and a half years. If you lived there, you'd have barely had your first birthday as a parent by now."]},{"days":10958,"facts":["A 30-year-aged whisky has spent more than 10,000 days quietly developing extraordinary depth inside an oak barrel.","Giant tortoises born thirty years ago are still considered young by the standards of their remarkably long lives."]},{"days":11140,"facts":["The Moon has completed more than 375 journeys around Earth since your journey began."]},{"days":11323,"facts":["Thirty-one annual growth rings now tell the story of every tree that sprouted when your journey began.","A Japanese gardener has spent more than three decades shaping a landscape that now feels effortless, even though every stone and branch was placed with intention.","Deep beneath the sea, giant clams have continued adding beautiful layers to shells that may outlive many people.","A family-run vineyard has celebrated thirty-one unique harvests, each one impossible to repeat.","Earth has completed thirty-one incredible laps around the Sun."]},{"days":11505,"facts":["A handcrafted mechanical watch has faithfully measured more than 990 million seconds, powered only by tiny springs, gears, and remarkable craftsmanship.","Coral colonies restored decades ago now shelter entire communities of reef fish, sea stars, and sea turtles.","A colony of bowerbirds has spent thirty-one breeding seasons building elaborate displays decorated with shells, flowers, berries, and brilliant blue treasures.","Master chocolatiers have transformed cocoa into thousands upon thousands of handcrafted confections.","Ancient redwoods have quietly added another thirty-one rings to trees already standing long before modern cities existed."]},{"days":11688,"facts":["A 32-year-aged balsamic vinegar has become exceptionally rare, spending decades moving through a series of smaller wooden barrels to deepen its flavor.","A young forest planted when your journey began has grown into a cool, shaded home for owls, foxes, fungi, and wildflowers.","Formula 1 engineers have spent decades chasing improvements measured in thousandths of a second.","A humpback whale born when your journey started may now be guiding calves along one of the world's great migrations.","The International Space Station has circled Earth well over 175,000 times during this period."]},{"days":11871,"facts":["A bonsai artist has made thousands of careful trims, tiny adjustments that together created a living work of art.","Giant kelp forests have sheltered generations of sea otters, fish, and seals while reaching toward the sunlight.","A handcrafted acoustic guitar has spent decades growing richer in tone every time it's been played.","Honey bees have pollinated billions of blossoms across thirty-two springs.","In ancient caves, stalactites have grown by only a few millimeters, a quiet reminder that nature never hurries."]},{"days":12053,"facts":["Thirty-three years of careful reef restoration can transform damaged coastlines into thriving underwater ecosystems.","A master violin maker may have crafted hundreds of instruments, each with its own unique voice.","A family of beavers has spent decades creating wetlands that support hundreds of other species.","A traditional soy sauce has quietly developed extraordinary complexity after decades of patient aging.","Earth has now traveled more than 19 billion miles around the Sun since your journey began."]},{"days":12236,"facts":["A saguaro cactus has spent more than three decades slowly preparing for the dramatic arms it may soon begin to grow.","Skilled glass artists may have blown tens of thousands of pieces, each one shaped in only moments before the glass cooled.","Several generations of wandering albatrosses have crossed the Southern Ocean on wings built for endless flight.","A handcrafted leather satchel has softened beautifully, carrying decades of adventures.","Deep beneath the forest floor, fungi have continued quietly connecting neighboring trees in one of Earth's oldest living partnerships."]},{"days":12419,"facts":["A young olive grove has become beautifully established after more than three decades of harvests.","Formula 1 has welcomed new champions, new technologies, and entirely new eras of racing over thirty-four seasons.","Pearl oysters have continued adding countless shimmering layers around their hidden treasures.","A restored prairie has become a flourishing tapestry of grasses, wildflowers, butterflies, and songbirds.","The Moon has completed more than 420 orbits around Earth."]},{"days":12601,"facts":["A Japanese maple has spent thirty-four autumns painting the landscape in brilliant shades of crimson and gold.","A handcrafted cedar canoe has gathered a lifetime of scratches, stories, and quiet mornings on the water.","A vineyard has now celebrated nearly thirty-five unique harvests, each shaped by its own season.","Ancient bristlecone pines have quietly added another thirty-four growth rings to trees already older than recorded history.","Master ceramic artists may have created enough pottery to fill entire galleries."]},{"days":12784,"facts":["A saguaro cactus may be growing its very first iconic arms, a milestone that often takes several decades of patient growth in the Sonoran Desert.","A giant tortoise that hatched when your journey began is still just getting started, with many decades of life ahead.","A handcrafted violin has spent thirty-five years becoming warmer, richer, and more expressive with every note played.","Thirty-five years of careful forest restoration can transform once-bare landscapes into thriving woodlands filled with wildlife.","While you've been growing, Earth has traveled more than 20 billion miles (32 billion km) around the Sun.","That's how long it took Voyager 1 to leave our solar neighborhood for good — launched in 1977, and it's still sending signals home today with less computing power than a musical greeting card. You've been running on less sleep and about the same amount of applause."]},{"days":12966,"facts":["A family of red foxes has raised generation after generation, each spring bringing new curious pups into the world.","Fine olive trees have spent thirty-five harvests producing oils shaped by changing seasons and weather.","A handcrafted grandfather clock has faithfully marked millions of quiet moments across three and a half decades.","Beneath tropical waters, coral colonies have become bustling underwater neighborhoods filled with colorful marine life.","The Moon has completed more than 430 orbits around Earth since your journey began."]},{"days":13149,"facts":["Thirty-six annual growth rings now tell the story of every tree that first sprouted when your journey began.","A Formula 1 team has reinvented itself through dozens of rule changes, innovations, and championship battles.","A Japanese bonsai has become increasingly refined through thousands of thoughtful trims and careful wiring.","Humpback whales have completed more than thirty migrations between tropical breeding grounds and polar feeding waters.","Earth has completed thirty-six incredible journeys around the Sun."]},{"days":13332,"facts":["A restored oyster reef has spent decades quietly filtering seawater while creating habitat for fish, crabs, and seahorses.","A master bookbinder may have handcrafted hundreds of beautiful leather-bound books designed to last for generations.","A grove of cork oaks has continued producing renewable cork without a single tree needing to be cut down.","Several generations of puffins have returned faithfully to the very same nesting cliffs.","Deep inside limestone caves, delicate stalactites have grown just a little longer, one mineral-rich drop at a time."]},{"days":13514,"facts":["A vineyard has celebrated thirty-seven unique harvests, with every vintage telling a different story of sun, soil, and rain.","A concert violin has spent thirty-seven years opening up, its voice becoming richer through thousands of performances.","Formula 1 engineers have analyzed billions of pieces of telemetry data in pursuit of speed.","A restored meadow has become a thriving home for butterflies, bees, wildflowers, and nesting birds.","Ancient bristlecone pines have quietly added another thirty-seven rings to trees already nearly five millennia old."]},{"days":13697,"facts":["A handcrafted cedar strip canoe has become a treasured heirloom after decades of adventures on lakes and rivers.","Giant kelp forests have sheltered generations of sea otters, harbor seals, and countless fish.","A family-run pottery studio may have shaped and fired tens of thousands of handmade pieces.","Honey stored nearly four decades ago is still naturally preserved today.","The International Space Station would later become a symbol of decades of continuous international collaboration in space."]},{"days":13880,"facts":["A young mangrove forest has grown into a thriving coastal habitat that helps protect shorelines while sheltering young marine life.","Formula 1 has welcomed entirely new generations of drivers, engineers, and innovations over nearly four decades.","Pearl oysters have continued adding shimmering layers around pearls hidden safely inside their shells.","A handcrafted acoustic guitar has matured beautifully, developing character with every year it has been played.","Earth has now traveled more than 22 billion miles around the Sun since your journey began."]},{"days":14062,"facts":["A Japanese maple has painted the landscape with nearly forty unforgettable autumn displays.","Skilled glassblowers may have transformed molten glass into many tens of thousands of one-of-a-kind works.","A colony of beavers has maintained wetlands that now support frogs, herons, dragonflies, turtles, and wildflowers.","Deep beneath a forest floor, fungal networks have quietly connected generations of trees.","The Moon has completed more than 475 journeys around Earth."]},{"days":14245,"facts":["A young redwood has spent thirty-nine years reaching toward the canopy, still only at the beginning of its centuries-long story.","Traditional balsamic vinegar has become extraordinarily rich after nearly four decades of patient aging.","Master watchmakers may have assembled thousands upon thousands of intricate mechanical timepieces.","A wandering albatross has completed enough migrations over a lifetime to fly the equivalent of several trips to the Moon and back.","Coral restoration projects begun decades ago now look almost indistinguishable from natural reefs."]},{"days":14427,"facts":["A handcrafted rocking chair has welcomed generations of bedtime stories, celebrations, and quiet conversations.","A family orchard has produced nearly forty harvests of apples, pears, peaches, or cherries.","Formula 1 mechanics have practiced so many pit stops that precision has become second nature.","Ancient giant sequoias have quietly added another thirty-nine rings to trunks that may someday stand for three thousand years.","In museums around the world, conservators have spent decades preserving priceless paintings one careful brushstroke at a time."]},{"days":14610,"facts":["A 40-year-old Scotch whisky has spent four decades slowly maturing inside oak barrels, developing extraordinary depth that simply can't be rushed.","A forest planted when your journey began has become a mature woodland, alive with birdsong, shade, fungi, and flourishing wildlife.","Giant tortoises born forty years ago are still considered young adults, with many remarkable decades still ahead.","Four decades of coral restoration can create vibrant reef ecosystems that support thousands of marine creatures.","While you've been on your journey, Earth has completed 40 incredible laps around the Sun, traveling roughly 23.5 billion miles (37.8 billion km) through space."]},{"days":14793,"facts":["A Japanese cedar planted when your journey began now towers above the garden, offering cool shade and shelter to countless birds.","Fine dark chocolate made from carefully aged cacao has delighted generations of chocolate lovers over four decades.","A master violin bow maker may have crafted hundreds of bows, each balanced to the smallest fraction of a gram.","Beneath the sea, a sponge colony has quietly filtered millions of gallons of seawater while becoming home to tiny marine creatures.","The Moon has completed more than 500 journeys around Earth since your journey began."]},{"days":14975,"facts":["Forty-one annual rings now tell the story of every tree that first took root when your journey started.","A Formula 1 fan has watched entirely new generations of champions inspire millions around the world.","A family of barn owls has returned to familiar nesting places for decades.","A handcrafted sailboat has carried friends and families across countless sunrises and sunsets.","Earth has completed forty-one remarkable journeys around the Sun."]},{"days":15158,"facts":["A vineyard has celebrated more than forty unique harvests, each shaped by its own weather, soil, and sunshine.","Coral reefs restored decades ago now shimmer with schools of fish that never knew the reef was once damaged.","Skilled watchmakers have assembled thousands of intricate movements powered only by springs, gears, and patience.","Ancient bristlecone pines have quietly added another forty-one growth rings to trees already among Earth's oldest living organisms.","Honey harvested when your journey began would still be naturally preserved today."]},{"days":15341,"facts":["A young giant sequoia has spent forty-two years preparing for a life that could span more than three thousand.","A handcrafted grand piano has filled homes and concert halls with music across four decades.","Formula 1 engineers have developed generations of innovations that eventually found their way into everyday road cars.","A restored wetland has become a thriving sanctuary for frogs, dragonflies, turtles, and migrating birds.","The International Space Station has now circled Earth hundreds of thousands of times since continuous habitation began."]},{"days":15523,"facts":["A bonsai artist has spent over four decades guiding one living tree into a work of art that grows more beautiful every year.","Giant kelp forests have sheltered countless generations of fish, sea otters, and harbor seals.","Traditional balsamic vinegar has continued concentrating into something extraordinarily rare.","Deep beneath your feet, fungal networks have quietly connected forests through every season of your journey.","Earth has traveled nearly 25 billion miles around the Sun."]},{"days":15706,"facts":["A family orchard has provided more than forty harvests of apples, pears, or peaches.","A concert violin has now spent over four decades opening up with every rehearsal and performance.","Pearl oysters have continued laying delicate layers around pearls, one microscopic coating at a time.","Formula 1 has inspired generations of engineers to dream bigger and build faster.","The Moon has completed more than 530 orbits around Earth.","That's how long Antoni Gaudí spent working on the Sagrada Família himself — and he only finished about a quarter of it before his time on the project ended. You, unlike Gaudí, will actually get to finish yours. Advantage: you."]},{"days":15888,"facts":["A restored prairie now ripples each summer with native grasses, butterflies, and wildflowers that weren't there when the project began.","A handcrafted leather journal could hold the story of an entire lifetime's adventures.","Giant tortoises born when your journey began are only now entering the prime of their remarkably long lives.","Skilled ceramic artists may have created enough pottery over four decades to fill entire museums.","Ancient olive trees have quietly produced another forty-three harvests."]},{"days":16071,"facts":["A Japanese maple has painted forty-four spectacular autumns across the landscape.","Coral nurseries established decades ago are now helping restore reefs faster than ever before.","Master chocolatiers have crafted thousands upon thousands of beautiful confections by hand.","Humpback whales have completed dozens of migrations between polar waters and tropical seas.","Earth has completed forty-four incredible laps around the Sun."]},{"days":16254,"facts":["A grove of cork oaks has provided sustainable cork harvests without a single tree needing to be felled.","Formula 1 mechanics have perfected thousands of pit stops where teamwork matters more than speed alone.","A handcrafted cedar canoe has become a treasured family heirloom.","Ancient redwoods have quietly added another forty-four growth rings to trees that have already watched centuries unfold.","Deep inside limestone caves, stalactites have grown almost imperceptibly, yet they never stopped growing."]},{"days":16436,"facts":["A forest planted forty-five years ago has become a rich, layered ecosystem where towering trees, fungi, birds, mammals, and insects all depend on one another.","A 45-year-old whisky has spent more than sixteen thousand days slowly maturing inside oak barrels.","A Galapagos giant tortoise is still only in the first half of its extraordinary lifespan.","Formula 1 has evolved through nearly half a century of breathtaking innovation, courage, and engineering brilliance.","While you've been on your journey, Earth has traveled more than 26 billion miles (42 billion km) around the Sun."]},{"days":16619,"facts":["A Japanese garden has spent nearly half a century becoming more beautiful as every tree, stone, and pathway settled naturally into place.","A family of trumpeter swans has welcomed generations of cygnets to the same peaceful wetlands.","A handcrafted leather armchair has developed the rich patina that only decades of daily life can create.","Deep beneath the sea, a coral colony has continued building its limestone city one tiny polyp at a time.","The Moon has completed more than 560 orbits around Earth since your journey began."]},{"days":16802,"facts":["Forty-six annual rings now tell the story of every tree that first sprouted when your journey began.","A Formula 1 engineer who started their career alongside your journey may now be leading an entire design team.","A family-run vineyard has celebrated forty-six harvests, each one unlike the last.","A handcrafted violin has spent forty-six years becoming richer every time it has been played.","Earth has completed forty-six remarkable journeys around the Sun."]},{"days":16984,"facts":["A restored oyster reef has spent decades filtering seawater while creating homes for countless marine animals.","A grove of cork oaks has produced sustainable harvests again and again without harming the trees.","Master ceramic artists may have created enough work to fill entire museums.","Ancient bristlecone pines have quietly added another forty-six growth rings.","Honey collected when your journey began would still be naturally preserved today."]},{"days":17167,"facts":["A mangrove forest has become a thriving nursery for fish, crabs, and seabirds while helping protect coastlines from storms.","Formula 1 has inspired an entirely new generation of engineers, designers, and drivers over forty-seven seasons.","A handcrafted fountain pen may have written the equivalent of dozens of novels.","Giant kelp forests have sheltered countless generations of marine life.","The Moon has completed more than 580 journeys around Earth."]},{"days":17349,"facts":["A Japanese maple has painted nearly fifty unforgettable autumns across the landscape.","A master piano builder may have crafted hundreds of grand pianos, each taking months of careful work.","Coral restoration projects have become vibrant underwater neighborhoods filled with life.","A wandering albatross has crossed entire oceans year after year with astonishing endurance.","Earth has traveled more than 27 billion miles around the Sun."]},{"days":17532,"facts":["A young forest has become home to foxes, owls, fungi, wildflowers, and generations of nesting birds.","A 48-year-old balsamic vinegar has quietly concentrated into something extraordinarily rare.","Formula 1 has reinvented itself through decades of remarkable innovation.","Pearl oysters have added millions upon millions of shimmering layers around their hidden treasures.","The International Space Station continues to demonstrate what's possible when nations build something together."]},{"days":17715,"facts":["A bonsai artist has spent nearly half a century shaping a living sculpture that continues to grow more beautiful.","A handcrafted cedar canoe has become a treasured family heirloom shared across generations.","Ancient giant sequoias have quietly added another forty-eight growth rings to trees already standing for millennia.","A family orchard has produced nearly fifty harvests of fruit.","Deep beneath the forest floor, fungal networks have continued quietly connecting one generation of trees to the next."]},{"days":17897,"facts":["A vineyard planted when your journey began has matured into one capable of producing exceptional wines year after year.","A concert grand piano has spent nearly fifty years filling rooms with music.","Giant tortoises born when your journey started still have many remarkable decades ahead of them.","Formula 1 mechanics have practiced precision and teamwork through nearly half a century of races.","Earth has completed forty-nine incredible laps around the Sun."]},{"days":18080,"facts":["A restored prairie now blooms each year with thousands of native wildflowers that weren't there when the work began.","Skilled glass artists may have transformed molten sand into tens of thousands of shimmering creations.","A handcrafted rocking chair has welcomed nearly fifty years of conversations, stories, and celebrations.","Ancient olive trees have quietly produced another forty-nine harvests.","The Moon has completed more than 600 orbits around Earth."]},{"days":18263,"facts":["A forest planted fifty years ago has become a thriving ecosystem, supporting countless birds, mammals, insects, fungi, and plants that all depend on one another.","A 50-year-old Scotch whisky has spent half a century slowly developing extraordinary depth inside an oak barrel.","Giant tortoises born fifty years ago are still considered young by the standards of their incredible lifespan.","A master craftsperson may have spent five decades creating objects that become treasured family heirlooms.","While you've been on your journey, Earth has completed 50 breathtaking laps around the Sun."]},{"days":18445,"facts":["A Japanese cedar has become a towering landmark, offering shade and shelter to generations of birds.","Coral reefs restored half a century ago now feel timeless to the creatures that call them home.","A handcrafted mechanical watch has quietly marked more than 1.5 billion seconds.","Formula 1 has welcomed entirely new generations of fans, engineers, and champions.","Deep inside limestone caves, stalactites have continued their almost imperceptible growth."]},{"days":18628,"facts":["Fifty-one annual rings now tell the story of every tree that first took root when your journey began.","A family of beavers has spent decades shaping wetlands that support hundreds of species.","A handcrafted sailboat has crossed countless horizons under changing skies.","Pearl oysters continue adding microscopic beauty one layer at a time.","Earth has completed fifty-one journeys around the Sun."]},{"days":18810,"facts":["A vineyard has celebrated more than fifty unique harvests.","A handcrafted violin has become an instrument with a lifetime of stories in its wood.","Humpback whales have completed dozens upon dozens of epic migrations.","Ancient redwoods have quietly added another fifty-one growth rings.","The Moon has completed more than 630 orbits around Earth."]},{"days":18993,"facts":["A restored wetland has become so established that many species know it only as home.","A Formula 1 engineer has witnessed generations of racing innovation come and go.","Fine balsamic vinegar has spent over half a century becoming extraordinarily concentrated.","A grove of cork oaks continues producing renewable cork without sacrificing a single tree.","Earth has traveled more than 30 billion miles around the Sun."]},{"days":19176,"facts":["A bonsai artist has spent over fifty years creating a living masterpiece that can continue for generations after them.","A family orchard has provided fruit through more than fifty changing seasons.","Coral colonies have quietly expanded into intricate underwater cities.","A handcrafted leather journal could now hold an entire lifetime of memories.","Ancient bristlecone pines continue adding rings to lives measured in millennia."]},{"days":19358,"facts":["A young redwood planted when your journey began has become a striking presence in the forest, with centuries of growth still ahead.","Formula 1 has thrilled fans through more than fifty championship seasons of innovation and courage.","A master violin maker may have created instruments now played by musicians around the world.","Giant kelp forests have continued sheltering generations of sea life.","The International Space Station remains a symbol of long-term human collaboration."]},{"days":19541,"facts":["A Japanese maple has celebrated more than fifty breathtaking autumns.","A handcrafted grandfather clock has faithfully marked more than half a century of family milestones.","Ancient olive trees have quietly yielded another harvest.","Deep beneath forests, fungi have continued their unseen work connecting trees.","Earth has completed fifty-three remarkable laps around the Sun."]},{"days":19724,"facts":["A restored meadow has become a vibrant tapestry of native flowers, pollinators, and birds.","A 54-year-aged whisky has become exceptionally rare and deeply complex.","Giant tortoises continue their unhurried journey through life.","Formula 1 has reinvented itself through multiple generations of engineering brilliance.","The Moon has completed nearly 670 journeys around Earth."]},{"days":19906,"facts":["A handcrafted cedar canoe has become part of a family's traditions across generations.","Coral reefs have quietly welcomed countless new fish, turtles, and rays.","A family vineyard has produced more than half a century of unique vintages.","Master bookbinders may have created libraries' worth of heirloom books.","Ancient giant sequoias have quietly added another fifty-four rings."]},{"days":20089,"facts":["A forest planted fifty-five years ago has become an intricate web of life, where towering trees, mushrooms, birds, mammals, and insects all depend on one another.","A handcrafted violin has spent fifty-five years becoming richer every time it has been played.","Formula 1 has inspired generations of dreamers to become engineers, mechanics, and drivers.","Earth has completed 55 incredible journeys around the Sun.","A Galapagos giant tortoise still has the potential for many remarkable decades ahead."]},{"days":20271,"facts":["A Japanese garden has spent more than half a century growing into a place where every season feels intentional, every tree tells a story, and every stone seems perfectly at home.","A family of trumpeter swans has returned to the same wetlands across generations, raising cygnets where their ancestors once did.","A handcrafted rocking chair has become part of decades of conversations, bedtime stories, and quiet mornings.","Deep beneath the ocean, a coral colony has continued building its limestone home one tiny polyp at a time.","The Moon has completed more than 680 journeys around Earth since your journey began."]},{"days":20454,"facts":["Fifty-six growth rings now tell the complete story of every tree that first took root when your journey began.","A Formula 1 team has seen entire generations of engineers, mechanics, and drivers pass through its garage while constantly reinventing itself.","A family vineyard has celebrated fifty-six harvests, each one carrying the unique fingerprint of its year.","A handcrafted violin has spent more than half a century becoming warmer and richer with every performance.","Earth has completed 56 extraordinary journeys around the Sun."]},{"days":20637,"facts":["A restored oyster reef has spent decades filtering seawater, creating cleaner coastlines and homes for thousands of marine creatures.","Ancient bristlecone pines have quietly added another fifty-six growth rings to lives already measured in millennia.","Master ceramic artists may have fired tens of thousands of pieces, each one beginning as a lump of clay and a patient pair of hands.","A grove of cork oaks has continued providing renewable harvests without losing a single tree.","Honey harvested when your journey began would still be naturally preserved today."]},{"days":20819,"facts":["A mangrove forest planted when your journey began has become a bustling nursery where young fish, crabs, and birds find safety before venturing into the wider world.","A grand piano has spent fifty-seven years filling homes and concert halls with music that exists only in the moment it's played.","Pearl oysters have quietly added millions upon millions of shimmering layers around treasures hidden from view.","Formula 1 has inspired another generation of children to dream about engineering, speed, and possibility.","Earth has traveled more than 33 billion miles (53 billion km) around the Sun."]},{"days":21002,"facts":["A bonsai artist has spent nearly six decades shaping a single living tree, a masterpiece still growing, still changing, and never truly finished.","A wandering albatross has crossed entire oceans year after year with astonishing grace and endurance.","A handcrafted fountain pen may have written enough words to fill an entire library.","Ancient redwoods have quietly added another fifty-seven growth rings.","The Moon has completed more than 700 orbits around Earth."]},{"days":21185,"facts":["A forest planted fifty-eight years ago has become a rich, layered ecosystem where towering trees, fungi, insects, birds, and mammals all help one another thrive.","A 58-year-old Scotch whisky has spent more than half a century slowly transformed by oak, time, and patience.","Giant tortoises born when your journey began still have decades of remarkable life ahead of them.","Coral reefs restored generations ago now feel ancient to the fish that have always called them home.","Earth has completed fifty-eight breathtaking laps around the Sun."]},{"days":21367,"facts":["A Japanese maple has painted fifty-eight spectacular autumns across the landscape.","A handcrafted cedar canoe has carried multiple generations across quiet lakes and winding rivers.","Master bookbinders may have created enough heirloom books to fill entire libraries.","Deep beneath forests, fungal networks have quietly connected one generation of trees to the next.","The International Space Station continues to circle Earth as a symbol of what humanity can build together."]},{"days":21550,"facts":["A young giant sequoia planted when your journey began has become an impressive tree, but in the life of a sequoia, it's still only getting started.","A vineyard has now celebrated fifty-nine completely unique harvests, each impossible to repeat.","Formula 1 has evolved through nearly six decades of breathtaking engineering innovation.","Ancient olive trees have quietly produced another fifty-nine harvests.","Earth has completed fifty-nine incredible journeys around the Sun."]},{"days":21732,"facts":["A restored prairie has become a sea of native grasses and wildflowers, alive with butterflies, bees, birds, and the quiet rhythm of every season.","A handcrafted mechanical watch has faithfully marked more than 1.8 billion seconds.","Giant kelp forests have sheltered countless generations of marine life beneath the waves.","Ancient bristlecone pines have quietly continued lives that began long before recorded history.","The Moon has completed more than 730 journeys around Earth."]},{"days":21915,"facts":["You've completed sixty journeys around the Sun, a full traditional zodiac cycle in many cultures, marking a return to the same place in the heavens, but as someone entirely transformed.","A forest planted when your journey began has matured into a living community where towering trees, birds, mammals, fungi, insects, and wildflowers all support one another, a reminder that the most meaningful growth eventually creates space for others to flourish.","A 60-year-old Scotch whisky has spent six decades quietly becoming one of the rarest expressions of patience, craftsmanship, and time.","A young giant sequoia is still only at the beginning of a life that could continue for another 3,000 years, quietly reminding us that some of the greatest things are built on timescales far beyond our own.","While you've been becoming, Earth has traveled more than 35 billion miles (56 billion km) through space, carrying every sunrise, every conversation, every celebration, and every ordinary Tuesday with it."]}];
+
+  function launchFireworks(container){
+    if(!container) return;
+    container.innerHTML = '';
+    var colors = ['#e7e246', '#9e1892', '#F0B429', '#efe7da'];
+    var sparkCount = 18;
+    for(var i = 0; i < sparkCount; i++){
+      var spark = document.createElement('div');
+      spark.className = 'spark';
+      var angle = (Math.PI * 2 * i) / sparkCount + (Math.random() * 0.4 - 0.2);
+      var distance = 60 + Math.random() * 50;
+      var tx = Math.cos(angle) * distance;
+      var ty = Math.sin(angle) * distance;
+      var size = 4 + Math.random() * 4;
+      spark.style.width = size + 'px';
+      spark.style.height = size + 'px';
+      spark.style.background = colors[Math.floor(Math.random() * colors.length)];
+      spark.style.setProperty('--tx', tx + 'px');
+      spark.style.setProperty('--ty', ty + 'px');
+      spark.style.animationDelay = (Math.random() * 0.15) + 's';
+      container.appendChild(spark);
+    }
+    setTimeout(function(){
+      container.innerHTML = '';
+    }, 1400);
+  }
+
+  function animateStatCountUp(el, target, duration, delay){
+    setTimeout(function(){
+      var startTime = null;
+      function step(timestamp){
+        if(!startTime) startTime = timestamp;
+        var progress = Math.min((timestamp - startTime) / duration, 1);
+        var eased = 1 - Math.pow(1 - progress, 3);
+        var current = Math.round(target * eased);
+        el.textContent = current.toLocaleString();
+        if(progress < 1){
+          requestAnimationFrame(step);
+        } else {
+          el.textContent = target.toLocaleString();
+        }
+      }
+      requestAnimationFrame(step);
+    }, delay || 0);
+  }
+
+  function closestBucket(elapsedDays){
+    var best = MILESTONE_BUCKETS[0];
+    var bestDiff = Math.abs(elapsedDays - best.days);
+    for(var i = 1; i < MILESTONE_BUCKETS.length; i++){
+      var diff = Math.abs(elapsedDays - MILESTONE_BUCKETS[i].days);
+      if(diff < bestDiff){
+        best = MILESTONE_BUCKETS[i];
+        bestDiff = diff;
+      }
+    }
+    return best;
+  }
+
+  function pickRandomFact(bucket){
+    var idx = Math.floor(Math.random() * bucket.facts.length);
+    return bucket.facts[idx];
+  }
+
+  var form = document.getElementById('entry-form');
+  var formView = document.getElementById('form-view');
+  var revealView = document.getElementById('reveal-view');
+  var errorMsg = document.getElementById('error-msg');
+
+  // ---------- Live perspective ----------
+  // This calls YOUR backend function (not Claude directly), so no API key
+  // ever needs to live in this file. Change this to your deployed backend's
+  // web address once you've set it up on Vercel.
+  var BACKEND_URL = 'https://YOUR-VERCEL-PROJECT.vercel.app/api/perspective';
+
+  function fetchLivePerspective(experience, name, years, months, days){
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function(){ controller.abort(); }, 20000);
+
+    return fetch(BACKEND_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        experience: experience,
+        name: name,
+        years: years,
+        months: months,
+        days: days
+      }),
+      signal: controller.signal
+    }).then(function(res){
+      clearTimeout(timeoutId);
+      if(!res.ok) return null;
+      return res.json();
+    }).then(function(data){
+      return data && data.text ? data.text : null;
+    }).catch(function(){
+      clearTimeout(timeoutId);
+      return null;
+    });
+  }
+
+  // ---------- Celebration GIF (Giphy public demo key, shown once at the end) ----------
+  function fetchCelebrationGif(){
+    var keywords = ['impressed', 'celebrate', 'excited'];
+    var keyword = keywords[Math.floor(Math.random() * keywords.length)];
+    var giphyDemoKey = 'dc6zaTOxFJmzC';
+    fetch('https://api.giphy.com/v1/gifs/search?api_key=' + giphyDemoKey + '&q=' + encodeURIComponent(keyword) + '&limit=25&rating=g')
+      .then(function(res){ return res.ok ? res.json() : null; })
+      .then(function(data){
+        if(!data || !data.data || !data.data.length) return;
+        var pick = data.data[Math.floor(Math.random() * data.data.length)];
+        var url = pick.images && pick.images.downsized_medium ? pick.images.downsized_medium.url :
+          (pick.images && pick.images.original ? pick.images.original.url : null);
+        if(!url) return;
+        document.getElementById('celebration-gif-img').src = url;
+        document.getElementById('celebration-gif').hidden = false;
+      })
+      .catch(function(){ /* silently skip the gif if it fails */ });
+  }
+
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    errorMsg.textContent = '';
+
+    var experience = document.getElementById('experience').value.trim();
+    var name = document.getElementById('name').value.trim();
+    var startVal = document.getElementById('start-date').value;
+
+    if(!experience){
+      errorMsg.textContent = "Name your experience.";
+      return;
+    }
+    if(!name){
+      errorMsg.textContent = "Enter your name.";
+      return;
+    }
+    if(!startVal){
+      errorMsg.textContent = "Enter a start date.";
+      return;
+    }
+
+    var start = new Date(startVal + 'T00:00:00');
+    var today = new Date();
+    today.setHours(0,0,0,0);
+
+    if(isNaN(start.getTime())){
+      errorMsg.textContent = "That date doesn't look right.";
+      return;
+    }
+    if(start > today){
+      errorMsg.textContent = "That date is in the future. Try again.";
+      return;
+    }
+
+    var msPerDay = 1000 * 60 * 60 * 24;
+    var days = Math.floor((today - start) / msPerDay);
+
+    var months = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
+    if(today.getDate() < start.getDate()){ months -= 1; }
+    if(months < 0){ months = 0; }
+
+    var years = today.getFullYear() - start.getFullYear();
+    var hadAnniversary = (today.getMonth() > start.getMonth()) ||
+      (today.getMonth() === start.getMonth() && today.getDate() >= start.getDate());
+    if(!hadAnniversary){ years -= 1; }
+    if(years < 0){ years = 0; }
+
+    var seedMillions = Math.floor(Math.random() * (400 - 30 + 1)) + 30;
+    var seedText = '~' + seedMillions.toLocaleString() + ' million';
+
+    var motherhoodKeywords = ['mom', 'mother', 'motherhood', 'parent', 'parenting', 'mama', 'mommy'];
+    var experienceLower = experience.toLowerCase();
+    var isMotherhood = motherhoodKeywords.some(function(kw){ return experienceLower.indexOf(kw) !== -1; });
+    document.getElementById('creator-list').hidden = !isMotherhood;
+    document.getElementById('creator-eyebrow').textContent = isMotherhood ? 'As a creator, you' : experience.charAt(0).toUpperCase() + experience.slice(1) + ' really adds up';
+
+    document.getElementById('reveal-name').textContent = name;
+    document.getElementById('affirmation-lead').textContent = days.toLocaleString() + ' days of lived experience, ' + name + '.';
+    document.getElementById('affirmation-body').textContent = 'That\u2019s a whole lot of evidence for someone wondering if they know enough to be here. Impostor syndrome can sit the funk down now. You have receipts.';
+    document.getElementById('seed-count').textContent = seedText;
+    var yearsDuration = 700, yearsDelay = 0;
+    var monthsDuration = 700, monthsDelay = yearsDelay + yearsDuration + 150;
+    var daysDuration = 900, daysDelay = monthsDelay + monthsDuration + 150;
+    animateStatCountUp(document.getElementById('stat-years'), years, yearsDuration, yearsDelay);
+    animateStatCountUp(document.getElementById('stat-months'), months, monthsDuration, monthsDelay);
+    animateStatCountUp(document.getElementById('stat-days'), days, daysDuration, daysDelay);
+    setTimeout(function(){
+      launchFireworks(document.getElementById('fireworks'));
+      fetchCelebrationGif();
+    }, daysDelay + daysDuration + 100);
+
+    var bucket = closestBucket(days);
+    var fact = pickRandomFact(bucket);
+    var introLine;
+    if(years >= 1){
+      introLine = 'You\u2019ve officially put in ' + years + (years === 1 ? ' year' : ' years') + ' on this journey.';
+    } else if(months >= 1){
+      introLine = 'You\u2019ve officially put in ' + months + (months === 1 ? ' month' : ' months') + ' on this journey.';
+    } else {
+      introLine = 'You\u2019ve officially put in ' + days + (days === 1 ? ' day' : ' days') + ' on this journey.';
+    }
+    var perspectiveEl = document.getElementById('perspective-line');
+    perspectiveEl.textContent = introLine + ' ' + fact;
+
+    perspectiveEl.classList.add('loading');
+    fetchLivePerspective(experience, name, years, months, days).then(function(liveText){
+      perspectiveEl.classList.remove('loading');
+      if(liveText){
+        perspectiveEl.textContent = liveText;
+      }
+      // if the live fetch failed or came back empty, the pre-written fallback stays as-is
+    });
+
+    formView.classList.add('hidden');
+    revealView.classList.remove('active');
+    void revealView.offsetWidth;
+    revealView.classList.add('active');
+
+    document.querySelectorAll('.petal, .seed-dot, .stem').forEach(function(el){
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = '';
+    });
+  });
+
+  document.getElementById('reset-btn').addEventListener('click', function(){
+    revealView.classList.remove('active');
+    formView.classList.remove('hidden');
+    form.reset();
+    errorMsg.textContent = '';
+    var gifContainer = document.getElementById('celebration-gif');
+    gifContainer.hidden = true;
+    document.getElementById('celebration-gif-img').src = '';
+  });
+})();
+</script>
+
+
+</body>
+</html>
