@@ -24,6 +24,8 @@ module.exports = async function handler(req, res) {
     return;
   }
 
+  console.log('perspective function invoked, has key:', !!process.env.ANTHROPIC_API_KEY);
+
   try {
     var body = req.body || {};
     var experience = body.experience;
@@ -73,7 +75,9 @@ module.exports = async function handler(req, res) {
     clearTimeout(timeoutId);
 
     if (!anthropicRes.ok) {
-      res.status(200).json({ text: null });
+      var errBody = await anthropicRes.text();
+      console.error('Anthropic API returned an error:', anthropicRes.status, errBody);
+      res.status(200).json({ text: null, debug: 'Anthropic API error ' + anthropicRes.status + ': ' + errBody.slice(0, 300) });
       return;
     }
 
@@ -86,6 +90,7 @@ module.exports = async function handler(req, res) {
 
     res.status(200).json({ text: text || null });
   } catch (err) {
-    res.status(200).json({ text: null });
+    console.error('perspective function crashed:', err);
+    res.status(200).json({ text: null, debug: String(err && err.message ? err.message : err) });
   }
 };
