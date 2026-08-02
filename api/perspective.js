@@ -81,7 +81,7 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 400,
+        max_tokens: 800,
         system: systemPrompt,
         messages: [{ role: 'user', content: 'Write the paragraph now.' }],
         tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 2 }]
@@ -99,6 +99,15 @@ module.exports = async function handler(req, res) {
     }
 
     var data = await anthropicRes.json();
+
+    // If it got cut off mid-thought, don't show a broken fragment \u2014
+    // just fall back to the pre-written list instead.
+    if (data.stop_reason === 'max_tokens') {
+      console.error('perspective response got cut off (max_tokens) before finishing');
+      res.status(200).json({ text: null, debug: 'Response was truncated before finishing' });
+      return;
+    }
+
     var textBlocks = (data.content || []).filter(function (block) { return block.type === 'text'; });
     var text = textBlocks.length ? textBlocks[textBlocks.length - 1].text.trim() : null;
 
