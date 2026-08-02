@@ -61,11 +61,13 @@
     font-size: clamp(30px, 6vw, 42px);
     line-height: 1.1;
     margin: 0 0 14px;
+    text-align: center;
   }
 
   .intro-copy{
-    margin: 0 0 32px;
+    margin: 0 auto 32px;
     max-width: 48ch;
+    text-align: center;
   }
 
   .intro-copy p{
@@ -83,6 +85,7 @@
 
   #lived-eyebrow{
     color: #e6e246;
+    text-align: center;
   }
 
   #lived-title{
@@ -604,7 +607,7 @@ var MILESTONE_BUCKETS = [{"days":15,"facts":["A monarch butterfly chrysalis tran
   // This calls YOUR backend function (not Claude directly), so no API key
   // ever needs to live in this file. Change this to your deployed backend's
   // web address once you've set it up on Vercel.
-  var BACKEND_URL = 'https://livedexperience.vercel.app/api/perspective';
+  var BACKEND_URL = 'https://YOUR-VERCEL-PROJECT.vercel.app/api/perspective';
 
   function fetchLivePerspective(experience, name, years, months, days){
     var controller = new AbortController();
@@ -635,9 +638,9 @@ var MILESTONE_BUCKETS = [{"days":15,"facts":["A monarch butterfly chrysalis tran
 
   // ---------- Celebration GIF (Giphy public demo key, shown once at the end) ----------
   function fetchCelebrationGif(){
-    var keywords = ['happy dogs','happy cat','impressed', 'celebrate', 'excited'];
+    var keywords = ['impressed', 'celebrate', 'excited'];
     var keyword = keywords[Math.floor(Math.random() * keywords.length)];
-    var giphyDemoKey = 'j6fAOAU10CkrXqTBEiAs30gY6rVMLBFJ';
+    var giphyDemoKey = 'dc6zaTOxFJmzC';
     fetch('https://api.giphy.com/v1/gifs/search?api_key=' + giphyDemoKey + '&q=' + encodeURIComponent(keyword) + '&limit=25&rating=g')
       .then(function(res){ return res.ok ? res.json() : null; })
       .then(function(data){
