@@ -61,9 +61,10 @@ module.exports = async function handler(req, res) {
       'Use the web_search tool to find ONE real, specific, interesting fact about something else that took roughly the same amount of time \u2014 an animal life stage, a building, a piece of art, a natural process, a career, anything true and checkable.',
       'HARD REQUIREMENT: whatever you pick must have taken between ' + roundedMin + ' and ' + roundedMax + ' years. Not several times longer, not several times shorter \u2014 it has to land inside that window. If your first idea doesn\u2019t fit, search again for something that does before you write anything.',
       'Pick something surprising with a real number, date, or detail. Do not pick anything about death, illness, violence, or prison.',
+      'Do your searching and thinking silently. Do not narrate your process, do not say things like "let me search" or "that\u2019s a good match" or "let me verify," and do not think out loud anywhere in your reply.',
       'Then write a short paragraph, 3 to 4 sentences, in a warm, funny, encouraging voice \u2014 like a supportive friend who has seen a lot and believes in people. Write at a 7th-grade reading level: short sentences, everyday words, no jargon.',
       'Reference the fact you found, and tie it back to this person\u2019s exact experience ("' + experience + '") in a way that feels personal and specific, not generic.',
-      'Output ONLY the finished paragraph. No preamble, no headers, no markdown, no quotation marks around the whole thing.'
+      'Output ONLY the finished paragraph and nothing before or after it. No preamble, no narration, no headers, no markdown, no quotation marks around the whole thing.'
     ].join(' ');
 
     var controller = new AbortController();
@@ -96,11 +97,8 @@ module.exports = async function handler(req, res) {
     }
 
     var data = await anthropicRes.json();
-    var text = (data.content || [])
-      .filter(function (block) { return block.type === 'text'; })
-      .map(function (block) { return block.text; })
-      .join(' ')
-      .trim();
+    var textBlocks = (data.content || []).filter(function (block) { return block.type === 'text'; });
+    var text = textBlocks.length ? textBlocks[textBlocks.length - 1].text.trim() : null;
 
     res.status(200).json({ text: text || null });
   } catch (err) {
