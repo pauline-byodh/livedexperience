@@ -24,6 +24,8 @@ module.exports = async function handler(req, res) {
     return;
   }
 
+  console.log('perspective function invoked, has key:', !!process.env.ANTHROPIC_API_KEY);
+
   try {
     var body = req.body || {};
     var experience = body.experience;
@@ -41,10 +43,24 @@ module.exports = async function handler(req, res) {
     experience = String(experience).slice(0, 200);
     name = String(name).slice(0, 100);
 
+    // Work out a tight, explicit acceptable range for the comparison fact,
+    // so the model can't wander off into something 5x longer or shorter.
+    // Longer experiences get a flat ~1 year of wiggle room either way;
+    // shorter ones (under 2 years) get a proportionally tighter window.
+    var totalYears = days / 365.25;
+    var toleranceYears = totalYears < 2 ? Math.max(totalYears * 0.4, 0.15) : 1;
+    var minYears = Math.max(0, totalYears - toleranceYears);
+    var maxYears = totalYears + toleranceYears;
+    var roundedTotal = Math.round(totalYears * 10) / 10;
+    var roundedMin = Math.round(minYears * 10) / 10;
+    var roundedMax = Math.round(maxYears * 10) / 10;
+
     var systemPrompt = [
       'You are writing one short paragraph for a personal web app called "The Lived Experience Calculator."',
-      'A person has spent ' + years + ' years, ' + months + ' months, and ' + days + ' days total on this experience: "' + experience + '". Their name is ' + name + '.',
-      'Use the web_search tool to find ONE real, specific, interesting fact about something else that took a similar amount of time \u2014 an animal life stage, a building, a piece of art, a natural process, a career, anything true and checkable. Pick something surprising with a real number, date, or detail. Do not pick anything about death, illness, violence, or prison.',
+      'A person has spent ' + years + ' years, ' + months + ' months, and ' + days + ' days total (about ' + roundedTotal + ' years) on this experience: "' + experience + '". Their name is ' + name + '.',
+      'Use the web_search tool to find ONE real, specific, interesting fact about something else that took roughly the same amount of time \u2014 an animal life stage, a building, a piece of art, a natural process, a career, anything true and checkable.',
+      'HARD REQUIREMENT: whatever you pick must have taken between ' + roundedMin + ' and ' + roundedMax + ' years. Not several times longer, not several times shorter \u2014 it has to land inside that window. If your first idea doesn\u2019t fit, search again for something that does before you write anything.',
+      'Pick something surprising with a real number, date, or detail. Do not pick anything about death, illness, violence, or prison.',
       'Then write a short paragraph, 3 to 4 sentences, in a warm, funny, encouraging voice \u2014 like a supportive friend who has seen a lot and believes in people. Write at a 7th-grade reading level: short sentences, everyday words, no jargon.',
       'Reference the fact you found, and tie it back to this person\u2019s exact experience ("' + experience + '") in a way that feels personal and specific, not generic.',
       'Output ONLY the finished paragraph. No preamble, no headers, no markdown, no quotation marks around the whole thing.'
@@ -73,7 +89,9 @@ module.exports = async function handler(req, res) {
     clearTimeout(timeoutId);
 
     if (!anthropicRes.ok) {
-      res.status(200).json({ text: null });
+      var errBody = await anthropicRes.text();
+      console.error('Anthropic API returned an error:', anthropicRes.status, errBody);
+      res.status(200).json({ text: null, debug: 'Anthropic API error ' + anthropicRes.status + ': ' + errBody.slice(0, 300) });
       return;
     }
 
@@ -86,6 +104,7 @@ module.exports = async function handler(req, res) {
 
     res.status(200).json({ text: text || null });
   } catch (err) {
-    res.status(200).json({ text: null });
+    console.error('perspective function crashed:', err);
+    res.status(200).json({ text: null, debug: String(err && err.message ? err.message : err) });
   }
 };
