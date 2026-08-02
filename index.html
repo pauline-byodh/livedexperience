@@ -638,7 +638,7 @@ var MILESTONE_BUCKETS = [{"days":15,"facts":["A monarch butterfly chrysalis tran
 
   // ---------- Celebration GIF (Giphy public demo key, shown once at the end) ----------
   function fetchCelebrationGif(){
-    var keywords = ['happy dog','happy cat','happy animals','impressed', 'celebrate', 'excited'];
+    var keywords = ['impressed', 'celebrate', 'excited'];
     var keyword = keywords[Math.floor(Math.random() * keywords.length)];
     var giphyDemoKey = 'j6fAOAU10CkrXqTBEiAs30gY6rVMLBFJ';
     fetch('https://api.giphy.com/v1/gifs/search?api_key=' + giphyDemoKey + '&q=' + encodeURIComponent(keyword) + '&limit=25&rating=g')
