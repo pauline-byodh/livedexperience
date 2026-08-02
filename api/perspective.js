@@ -81,7 +81,7 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 800,
+        max_tokens: 1500,
         system: systemPrompt,
         messages: [{ role: 'user', content: 'Write the paragraph now.' }],
         tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 2 }]
