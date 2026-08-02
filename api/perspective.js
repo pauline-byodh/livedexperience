@@ -66,7 +66,7 @@ module.exports = async function handler(req, res) {
       'Do your searching and thinking silently. Do not narrate your process, do not say things like "let me search" or "that\u2019s a good match" or "let me verify," and do not think out loud anywhere in your reply.',
       'Then write a short paragraph, 3 to 4 sentences, in a warm, funny, encouraging voice \u2014 like a supportive friend who has seen a lot and believes in people. Write at a 7th-grade reading level: short sentences, everyday words, no jargon.',
       'Reference the fact you found, and tie it back to this person\u2019s exact experience ("' + experience + '") in a way that feels personal and specific, not generic.',
-      'Output ONLY the finished paragraph and nothing before or after it. No preamble, no narration, no headers, no markdown, no quotation marks around the whole thing.'
+      'IMPORTANT: whatever thinking or verifying you do, do it before this point. Once you are ready, output the finished paragraph wrapped in these exact markers, with nothing else before, after, or in between: <<<ANSWER>>>your paragraph here<<<END>>> \u2014 only the text between <<<ANSWER>>> and <<<END>>> will be shown to anyone, so make sure the complete, clean paragraph is fully inside those markers.'
     ].join(' ');
 
     var controller = new AbortController();
@@ -109,7 +109,14 @@ module.exports = async function handler(req, res) {
     }
 
     var textBlocks = (data.content || []).filter(function (block) { return block.type === 'text'; });
-    var text = textBlocks.length ? textBlocks[textBlocks.length - 1].text.trim() : null;
+    var rawText = textBlocks.map(function (block) { return block.text; }).join('');
+
+    var markerMatch = rawText.match(/<<<ANSWER>>>([\s\S]*?)<<<END>>>/);
+    var text = markerMatch ? markerMatch[1].trim() : null;
+
+    if (!text) {
+      console.error('perspective response missing answer markers, raw text was:', rawText.slice(0, 500));
+    }
 
     res.status(200).json({ text: text || null });
   } catch (err) {
