@@ -61,13 +61,13 @@ module.exports = async function handler(req, res) {
       'Use the web_search tool to find ONE real, specific fact about something else where a DURATION or AGE-AT-MILESTONE is the actual number \u2014 not just something old that happens to have an impressive stat.',
       'GOOD examples of the kind of fact to find: "the Sydney Opera House took 14 years to build," "a giant sequoia takes about 20 years to produce its first cone," "NASA\u2019s Voyager 1 took 35 years to leave the solar system," "a bonsai tree is considered mastered after roughly 25 years of training." Notice the number IS the elapsed time \u2014 that is the whole point of the fact.',
       'BAD examples (do not do this): "a whale that age weighs 100 tons," "a tree that old is very tall," "a person that age has done a lot." These are facts about something old, not facts about the passage of time itself \u2014 they don\u2019t count, even if a number is present.',
-      'HARD REQUIREMENT: the duration or age-at-milestone you find must be between ' + roundedMin + ' and ' + roundedMax + ' years. Not several times longer, not several times shorter \u2014 it has to land inside that window. You have at most 2 searches \u2014 use them wisely.',
-      'Pick something that will make the reader go "wow, I did not know that" \u2014 genuinely surprising, with the specific number front and center. Do not pick anything about death, illness, violence, or prison.',
+      'HARD REQUIREMENT, NO EXCEPTIONS: the duration or age-at-milestone you use must be between ' + roundedMin + ' and ' + roundedMax + ' years. This is the single most important rule \u2014 accuracy to this window matters more than how interesting or surprising the fact is. A boring fact that is numerically correct is always better than a fascinating fact that falls outside the window. You have at most 2 searches \u2014 use them wisely.',
+      'Pick something that will make the reader go "wow, I did not know that" \u2014 genuinely surprising, with the specific number front and center \u2014 but ONLY if it still fits the window above. Do not pick anything about death, illness, violence, or prison.',
       'Do your searching and thinking silently. Do not narrate your process, do not say things like "let me search" or "that\u2019s a good match" or "let me verify," and do not think out loud anywhere in your reply.',
-      'YOU MUST ALWAYS FINISH WITH A COMPLETE PARAGRAPH, no matter what. If your searches don\u2019t turn up a perfect match within your search budget, do not give up and do not leave your answer unfinished \u2014 instead, use the best real fact you found (even if it\u2019s not a perfect fit) or draw on a well-known duration/age fact you\u2019re already confident is true and reasonably close, and write the paragraph anyway. An imperfect but complete answer is always better than no answer.',
+      'YOU MUST ALWAYS FINISH WITH A COMPLETE PARAGRAPH, no matter what. If your searches don\u2019t turn up a great match within your search budget, do not give up \u2014 instead, fall back on a well-known duration or age fact you are already confident is true (planet orbital periods, well-documented construction timelines, common animal life stages, etc.) that you are CERTAIN falls within ' + roundedMin + ' to ' + roundedMax + ' years, even if it is a more ordinary or less surprising fact. Staying inside the window is mandatory; being impressive is optional.',
       'Then write a short paragraph, 3 to 4 sentences, in a warm, funny, encouraging voice \u2014 like a supportive friend who has seen a lot and believes in people. Write at a 7th-grade reading level: short sentences, everyday words, no jargon.',
       'Reference the fact you found, and tie it back to this person\u2019s exact experience ("' + experience + '") in a way that feels personal and specific, not generic.',
-      'IMPORTANT: whatever thinking or verifying you do, do it before this point. Once you are ready, output the finished paragraph wrapped in these exact markers, with nothing else before, after, or in between: <<<ANSWER>>>your paragraph here<<<END>>> \u2014 only the text between <<<ANSWER>>> and <<<END>>> will be shown to anyone, so make sure the complete, clean paragraph is fully inside those markers. This step is mandatory \u2014 every response must end with a complete <<<ANSWER>>>...<<<END>>> block.'
+      'IMPORTANT: once you are ready, output your response in exactly this format and nothing else: <<<DURATION>>>the number of years your fact took, as a plain decimal number like 5.2<<<ANSWER>>>your finished paragraph<<<END>>> \u2014 the DURATION number will be automatically checked against the ' + roundedMin + ' to ' + roundedMax + ' window, and if it falls outside that window, your entire answer will be discarded and never shown to anyone. So double-check your own number is correct before finishing. This format is mandatory \u2014 every response must include both parts.'
     ].join(' ');
 
     var controller = new AbortController();
@@ -112,14 +112,33 @@ module.exports = async function handler(req, res) {
     var textBlocks = (data.content || []).filter(function (block) { return block.type === 'text'; });
     var rawText = textBlocks.map(function (block) { return block.text; }).join('');
 
-    var markerMatch = rawText.match(/<<<ANSWER>>>([\s\S]*?)<<<END>>>/);
-    var text = markerMatch ? markerMatch[1].trim() : null;
+    var durationMatch = rawText.match(/<<<DURATION>>>\s*([\d.]+)/);
+    var answerMatch = rawText.match(/<<<ANSWER>>>([\s\S]*?)<<<END>>>/);
+    var text = answerMatch ? answerMatch[1].trim() : null;
+    var claimedDuration = durationMatch ? parseFloat(durationMatch[1]) : null;
 
     if (!text) {
       console.error('perspective response missing answer markers, raw text was:', rawText.slice(0, 500));
+      res.status(200).json({ text: null, debug: 'Missing answer markers' });
+      return;
     }
 
-    res.status(200).json({ text: text || null });
+    if (claimedDuration === null || isNaN(claimedDuration)) {
+      console.error('perspective response missing a valid duration number, raw text was:', rawText.slice(0, 500));
+      res.status(200).json({ text: null, debug: 'Missing or invalid duration number' });
+      return;
+    }
+
+    // A little rounding buffer (0.05 years, about 2.5 weeks) so a value that's
+    // technically just barely outside the window due to rounding isn't rejected.
+    var buffer = 0.05;
+    if (claimedDuration < minYears - buffer || claimedDuration > maxYears + buffer) {
+      console.error('perspective duration out of range:', claimedDuration, 'expected between', roundedMin, 'and', roundedMax);
+      res.status(200).json({ text: null, debug: 'Duration ' + claimedDuration + ' was outside the allowed ' + roundedMin + '-' + roundedMax + ' year window' });
+      return;
+    }
+
+    res.status(200).json({ text: text });
   } catch (err) {
     console.error('perspective function crashed:', err);
     res.status(200).json({ text: null, debug: String(err && err.message ? err.message : err) });
