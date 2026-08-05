@@ -404,6 +404,16 @@
   .perspective-line.loading{
     color: var(--text-muted);
     font-style: italic;
+    animation: perspective-pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes perspective-pulse{
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .perspective-line.loading{ animation: none; }
   }
 
   .celebration-gif{
@@ -707,8 +717,11 @@ var MILESTONE_BUCKETS = [{"days":15,"facts":["A monarch butterfly chrysalis tran
     var seedText = '~' + seedMillions.toLocaleString() + ' million';
 
     var motherhoodKeywords = ['mom', 'mother', 'motherhood', 'parent', 'parenting', 'mama', 'mommy'];
+    var nonHumanQualifiers = ['dog', 'cat', 'pet', 'plant', 'fur', 'puppy', 'kitten'];
     var experienceLower = experience.toLowerCase();
-    var isMotherhood = motherhoodKeywords.some(function(kw){ return experienceLower.indexOf(kw) !== -1; });
+    var hasMotherhoodWord = motherhoodKeywords.some(function(kw){ return experienceLower.indexOf(kw) !== -1; });
+    var hasNonHumanQualifier = nonHumanQualifiers.some(function(kw){ return experienceLower.indexOf(kw) !== -1; });
+    var isMotherhood = hasMotherhoodWord && !hasNonHumanQualifier;
     document.getElementById('creator-list').hidden = !isMotherhood;
     document.getElementById('creator-eyebrow').textContent = isMotherhood ? 'As a creator, you' : experience.charAt(0).toUpperCase() + experience.slice(1) + ' really adds up';
 
@@ -737,22 +750,21 @@ var MILESTONE_BUCKETS = [{"days":15,"facts":["A monarch butterfly chrysalis tran
     } else {
       introLine = 'You\u2019ve officially put in ' + days + (days === 1 ? ' day' : ' days') + ' on this journey.';
     }
+    var fallbackText = introLine + ' ' + fact;
     var perspectiveEl = document.getElementById('perspective-line');
-    perspectiveEl.textContent = introLine + ' ' + fact;
-
+    perspectiveEl.textContent = 'Finding something interesting\u2026';
     perspectiveEl.classList.add('loading');
+
     fetchLivePerspective(experience, name, years, months, days).then(function(liveText){
       perspectiveEl.classList.remove('loading');
-      if(liveText){
-        perspectiveEl.textContent = liveText;
-      }
-      // if the live fetch failed or came back empty, the pre-written fallback stays as-is
+      perspectiveEl.textContent = liveText ? liveText : fallbackText;
     });
 
     formView.classList.add('hidden');
     revealView.classList.remove('active');
     void revealView.offsetWidth;
     revealView.classList.add('active');
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 
     document.querySelectorAll('.petal, .seed-dot, .stem').forEach(function(el){
       el.style.animation = 'none';
