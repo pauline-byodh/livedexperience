@@ -31,6 +31,7 @@
     background: var(--bg);
     color: var(--text);
     font-family: 'Inter', sans-serif;
+    overflow-anchor: none;
   }
 
   body{
@@ -760,11 +761,22 @@ var MILESTONE_BUCKETS = [{"days":15,"facts":["A monarch butterfly chrysalis tran
       perspectiveEl.textContent = liveText ? liveText : fallbackText;
     });
 
+    if(document.activeElement && document.activeElement.blur){
+      document.activeElement.blur();
+    }
     formView.classList.add('hidden');
     revealView.classList.remove('active');
     void revealView.offsetWidth;
     revealView.classList.add('active');
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      });
+    });
+    setTimeout(function(){
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }, 400);
 
     document.querySelectorAll('.petal, .seed-dot, .stem').forEach(function(el){
       el.style.animation = 'none';
