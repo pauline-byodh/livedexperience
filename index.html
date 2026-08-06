@@ -420,6 +420,19 @@
   .celebration-gif{
     margin: 0 0 28px;
     text-align: center;
+    min-height: 280px;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+
+  .celebration-gif.visible{
+    opacity: 1;
+  }
+
+  .celebration-gif.empty{
+    min-height: 0;
+    margin: 0;
+    transition: none;
   }
 
   .celebration-gif img{
@@ -530,7 +543,7 @@
       <p class="perspective-line" id="perspective-line"></p>
     </div>
 
-    <div class="celebration-gif" id="celebration-gif" hidden>
+    <div class="celebration-gif" id="celebration-gif">
       <img id="celebration-gif-img" src="" alt="A celebratory GIF">
       <p class="gif-caption">via GIPHY</p>
     </div>
@@ -652,18 +665,20 @@ var MILESTONE_BUCKETS = [{"days":15,"facts":["A monarch butterfly chrysalis tran
     var keywords = ['impressed', 'celebrate', 'excited'];
     var keyword = keywords[Math.floor(Math.random() * keywords.length)];
     var giphyDemoKey = 'j6fAOAU10CkrXqTBEiAs30gY6rVMLBFJ';
+    var gifContainer = document.getElementById('celebration-gif');
     fetch('https://api.giphy.com/v1/gifs/search?api_key=' + giphyDemoKey + '&q=' + encodeURIComponent(keyword) + '&limit=25&rating=g')
       .then(function(res){ return res.ok ? res.json() : null; })
       .then(function(data){
-        if(!data || !data.data || !data.data.length) return;
+        if(!data || !data.data || !data.data.length){ gifContainer.classList.add('empty'); return; }
         var pick = data.data[Math.floor(Math.random() * data.data.length)];
         var url = pick.images && pick.images.downsized_medium ? pick.images.downsized_medium.url :
           (pick.images && pick.images.original ? pick.images.original.url : null);
-        if(!url) return;
-        document.getElementById('celebration-gif-img').src = url;
-        document.getElementById('celebration-gif').hidden = false;
+        if(!url){ gifContainer.classList.add('empty'); return; }
+        var img = document.getElementById('celebration-gif-img');
+        img.onload = function(){ gifContainer.classList.add('visible'); };
+        img.src = url;
       })
-      .catch(function(){ /* silently skip the gif if it fails */ });
+      .catch(function(){ gifContainer.classList.add('empty'); });
   }
 
 
@@ -791,7 +806,7 @@ var MILESTONE_BUCKETS = [{"days":15,"facts":["A monarch butterfly chrysalis tran
     form.reset();
     errorMsg.textContent = '';
     var gifContainer = document.getElementById('celebration-gif');
-    gifContainer.hidden = true;
+    gifContainer.classList.remove('visible', 'empty');
     document.getElementById('celebration-gif-img').src = '';
   });
 })();
