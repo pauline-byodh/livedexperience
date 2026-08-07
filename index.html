@@ -783,15 +783,18 @@ var MILESTONE_BUCKETS = [{"days":15,"facts":["A monarch butterfly chrysalis tran
     revealView.classList.remove('active');
     void revealView.offsetWidth;
     revealView.classList.add('active');
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+
+    function scrollRevealToTop(){
+      var target = document.querySelector('.bloom-wrap') || revealView;
+      target.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'auto' });
+    }
+    scrollRevealToTop();
     requestAnimationFrame(function(){
-      requestAnimationFrame(function(){
-        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-      });
+      requestAnimationFrame(scrollRevealToTop);
     });
-    setTimeout(function(){
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    }, 400);
+    [50, 150, 300, 500, 800, 1200].forEach(function(delay){
+      setTimeout(scrollRevealToTop, delay);
+    });
 
     document.querySelectorAll('.petal, .seed-dot, .stem').forEach(function(el){
       el.style.animation = 'none';
