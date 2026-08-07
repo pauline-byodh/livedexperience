@@ -792,9 +792,16 @@ var MILESTONE_BUCKETS = [{"days":15,"facts":["A monarch butterfly chrysalis tran
     requestAnimationFrame(function(){
       requestAnimationFrame(scrollRevealToTop);
     });
-    [50, 150, 300, 500, 800, 1200].forEach(function(delay){
-      setTimeout(scrollRevealToTop, delay);
-    });
+    // Keep re-correcting through the entire animated sequence (stat count-up,
+    // fireworks, gif fade-in all finish by ~3s) so nothing after our last fixed
+    // checkpoint can quietly shift the scroll position and go uncorrected.
+    var scrollGuardStart = Date.now();
+    var scrollGuardInterval = setInterval(function(){
+      scrollRevealToTop();
+      if(Date.now() - scrollGuardStart > 3500){
+        clearInterval(scrollGuardInterval);
+      }
+    }, 100);
 
     document.querySelectorAll('.petal, .seed-dot, .stem').forEach(function(el){
       el.style.animation = 'none';
